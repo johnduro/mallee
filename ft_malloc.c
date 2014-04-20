@@ -6,7 +6,7 @@
 /*   By: mle-roy <mle-roy@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/04/20 15:48:08 by mle-roy           #+#    #+#             */
-/*   Updated: 2014/04/20 21:14:03 by rabid-on         ###   ########.fr       */
+/*   Updated: 2014/04/20 21:25:22 by rabid-on         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -131,7 +131,7 @@ void	*large_malloc(size_t size)
 		pool.large_m->next = NULL;
 		pool.large_m->prev = NULL;
 		pool.large_m->size = size;
-		return ((void *)pool.large_m + sizeof(bws_large));
+		return ((void *)pool.large_m + sizeof(t_large));
 	}
 	else
 	{
@@ -143,7 +143,7 @@ void	*large_malloc(size_t size)
 		bws_large = bws_large->next;
 		bws_large->next = NULL;
 		bws_large->size = size;
-		return ((void *)bws_large + sizeof(bws_large));
+		return ((void *)bws_large + sizeof(t_large));
 	}
 }
 
@@ -222,7 +222,10 @@ void	free_large(t_large *ptr)
 	if (ptr->prev == NULL && ptr->next == NULL)
 		pool.large_m = NULL;
 	else if (ptr->prev == NULL && ptr->next)
+	{
 		ptr->next->prev = NULL;
+		pool.large_m = ptr->next;
+	}
 	else if (ptr->next == NULL && ptr->prev)
 		ptr->prev->next = NULL;
 	else if (ptr->prev && ptr->next)
@@ -230,7 +233,7 @@ void	free_large(t_large *ptr)
 		ptr->prev->next = ptr->next;
 		ptr->next->prev = ptr->prev;
 	}
-	munmap(ptr, ptr->size);
+	munmap(ptr, ptr->size + sizeof(t_large));
 }
 
 int		is_large(void *ptr)
@@ -240,7 +243,7 @@ int		is_large(void *ptr)
 	bws_large = pool.large_m;
 	while (bws_large)
 	{
-		if (((void *)bws_large + sizeof(bws_large)) == ptr)
+		if (((void *)bws_large + sizeof(t_large)) == ptr)
 		{
 			free_large(bws_large);
 			return (1);
@@ -279,9 +282,7 @@ int		main()
 	}
 	printf("%s\n", test);
 	printf("%s\n", test2);
-	printf("free 1\n");
 	ft_free(test);
-	printf("free 2\n");
 	ft_free(test2);
 	test = (char *)ft_malloc(5000);
 	test2 = (char *)ft_malloc(5000);
