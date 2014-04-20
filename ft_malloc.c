@@ -6,7 +6,7 @@
 /*   By: mle-roy <mle-roy@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/04/20 15:48:08 by mle-roy           #+#    #+#             */
-/*   Updated: 2014/04/20 20:30:34 by mle-roy          ###   ########.fr       */
+/*   Updated: 2014/04/20 21:14:03 by rabid-on         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -127,22 +127,23 @@ void	*large_malloc(size_t size)
 
 	if (!pool.large_m)
 	{
-		pool.large_m = (t_sm *)mmap(0, size + 24, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+		pool.large_m = (t_large *)mmap(0, size + sizeof(t_large), PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		pool.large_m->next = NULL;
 		pool.large_m->prev = NULL;
 		pool.large_m->size = size;
-		return ((void *)pool.large_m + 24);
+		return ((void *)pool.large_m + sizeof(bws_large));
 	}
 	else
 	{
 		bws_large = pool.large_m;
 		while (bws_large->next)
 			bws_large = bws_large->next;
-		bws_large->next = (t_sm *)mmap(0, size + 24, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
-		bws_large->next->next = NULL;
+		bws_large->next = (t_large *)mmap(0, size + sizeof(t_large), PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		bws_large->next->prev = bws_large;
-		bws_large->next->size = size;
-		return ((void *)bws_large->next + 24);
+		bws_large = bws_large->next;
+		bws_large->next = NULL;
+		bws_large->size = size;
+		return ((void *)bws_large + sizeof(bws_large));
 	}
 }
 
@@ -154,9 +155,9 @@ void	*ft_malloc(size_t size)
 		return (NULL);
 	if (!flag)
 	{
+		pool.tiny_m = NULL;
 		pool.small_m = NULL;
-		pool.medium_m = NULL;
-		pool.big_m = NULL;
+		pool.large_m = NULL;
 		flag = 1;
 	}
 	if (size <= TINY_M)
@@ -239,11 +240,12 @@ int		is_large(void *ptr)
 	bws_large = pool.large_m;
 	while (bws_large)
 	{
-		if (((void *)bws_large + 24) == ptr)
+		if (((void *)bws_large + sizeof(bws_large)) == ptr)
 		{
 			free_large(bws_large);
 			return (1);
 		}
+		bws_large = bws_large->next;
 	}
 	return (0);
 }
@@ -263,22 +265,34 @@ void	ft_free(void *ptr)
 int		main()
 {
 	int		i;
-	int		j;
 	char	*test;
+	char	*test2;
 
 	i = 0;
-	j = 0;
-	while (j < 150)
+	test = (char *)ft_malloc(5000);
+	test2 = (char *)ft_malloc(5000);
+	while (i < 5000)
 	{
-		test = (char *)ft_malloc(256);
-		while (i < 256)
-		{
-			test[i] = 'a';
-			i++;
-		}
-		printf("%s\n", test);
-		j++;
-		i = 0;
+		test[i] = 'a';
+		test2[i] = 'b';
+		i++;
 	}
+	printf("%s\n", test);
+	printf("%s\n", test2);
+	printf("free 1\n");
+	ft_free(test);
+	printf("free 2\n");
+	ft_free(test2);
+	test = (char *)ft_malloc(5000);
+	test2 = (char *)ft_malloc(5000);
+	i = 0;
+	while (i < 5000)
+	{
+		test[i] = '1';
+		test2[i] = '2';
+		i++;
+	}
+	printf("%s\n", test);
+	printf("%s\n", test2);
 	return (0);
 }
