@@ -6,7 +6,7 @@
 /*   By: mle-roy <mle-roy@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/04/20 15:48:08 by mle-roy           #+#    #+#             */
-/*   Updated: 2014/04/20 21:25:22 by rabid-on         ###   ########.fr       */
+/*   Updated: 2014/04/20 22:00:19 by rabid-on         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -40,8 +40,24 @@ typedef struct		s_malloc
 }					t_malloc;
 
 
-	t_malloc			pool;
+t_malloc			pool;
 
+void	*ft_memcpy(void *s1, const void *s2, size_t n)
+{
+	size_t			i;
+	unsigned char	*s_1;
+	unsigned char	*s_2;
+
+	i = 0;
+	s_1 = (unsigned char *)s1;
+	s_2 = (unsigned char *)s2;
+	while (i < n)
+	{
+		s_1[i] = s_2[i];
+		i++;
+	}
+	return (s1);
+}
 
 void	init_mem(t_sm *mem)
 {
@@ -264,6 +280,91 @@ void	ft_free(void *ptr)
 	return ;
 }
 
+void	*realloc_ts(t_sm *mem, void *ptr, size_t size, size_t m_range)
+{
+	int		i;
+
+	i = 0;
+	while (i < 100)
+	{
+		if (mem->tab[i] != 0)
+		{
+			if (((void *)mem + ((i + 1) * m_range)) == ptr)
+			{
+				if (size <= TINY_M)
+				{
+					mem->tab[i] = size;
+					return (ptr);
+				}
+				else
+				{
+					mem->tab[i] = 0;
+					return (ft_memcpy(ft_malloc(size), ptr, size));
+				}
+			}
+		}
+		i++;
+	}
+	return (0);
+}
+
+void	*realloc_large(void *ptr, size_t size)
+{
+	void	*ret;
+	t_large	*tmp;
+
+	tmp = pool.large_m;
+	while (tmp)
+	{
+		if ((void *)tmp + sizeof(t_large) == ptr)
+		{
+			ret = ft_malloc(size);
+			ret = ft_memcpy(ret, ptr, size);
+			ft_free(ptr);
+			return (ret);
+		}
+		tmp = tmp->next;
+	}
+	return (NULL);
+}
+
+void	*search_realloc(void *ptr, size_t size)
+{
+	void	*ret;
+	t_sm	*tmp;
+
+	tmp = pool.tiny_m;
+	while (tmp)
+	{
+		if ((ret = realloc_ts(pool.tiny_m, ptr, size, TINY_M)))
+			return (ret);
+		tmp = tmp->next;
+	}
+	tmp = pool.small_m;
+	while (tmp)
+	{
+		if ((ret = realloc_ts(pool.small_m, ptr, size, SMALL_M)))
+			return (ret);
+		tmp = tmp->next;
+	}
+	if ((ret = realloc_large(ptr, size)))
+		return (ret);
+	return (NULL);
+}
+
+void	*ft_realloc(void *ptr, size_t size)
+{
+	if (size <= 0)
+	{
+		ft_free(ptr);
+		return (NULL);
+	}
+	else if (!ptr)
+		return (ft_malloc(size));
+	else
+		return (search_realloc(ptr, size));
+	return (NULL);
+}
 
 int		main()
 {
@@ -282,12 +383,10 @@ int		main()
 	}
 	printf("%s\n", test);
 	printf("%s\n", test2);
-	ft_free(test);
-	ft_free(test2);
-	test = (char *)ft_malloc(5000);
-	test2 = (char *)ft_malloc(5000);
-	i = 0;
-	while (i < 5000)
+	test = (char *)ft_realloc(test, 6500);
+	test2 = (char *)ft_realloc(test2, 6500);
+	i = 5000;
+	while (i < 6500)
 	{
 		test[i] = '1';
 		test2[i] = '2';
