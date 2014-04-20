@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_malloc.c                                        :+:      :+:    :+:   */
+/*   malloc.c                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: mle-roy <mle-roy@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/04/20 15:48:08 by mle-roy           #+#    #+#             */
-/*   Updated: 2014/04/20 22:00:19 by rabid-on         ###   ########.fr       */
+/*   Updated: 2014/04/20 22:54:30 by rabid-on         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -163,7 +163,7 @@ void	*large_malloc(size_t size)
 	}
 }
 
-void	*ft_malloc(size_t size)
+void	*malloc(size_t size)
 {
 	static char			flag = 0;
 
@@ -269,7 +269,7 @@ int		is_large(void *ptr)
 	return (0);
 }
 
-void	ft_free(void *ptr)
+void	free(void *ptr)
 {
 	if (is_tiny(ptr))
 		return ;
@@ -299,7 +299,7 @@ void	*realloc_ts(t_sm *mem, void *ptr, size_t size, size_t m_range)
 				else
 				{
 					mem->tab[i] = 0;
-					return (ft_memcpy(ft_malloc(size), ptr, size));
+					return (ft_memcpy(malloc(size), ptr, size));
 				}
 			}
 		}
@@ -318,9 +318,9 @@ void	*realloc_large(void *ptr, size_t size)
 	{
 		if ((void *)tmp + sizeof(t_large) == ptr)
 		{
-			ret = ft_malloc(size);
+			ret = malloc(size);
 			ret = ft_memcpy(ret, ptr, size);
-			ft_free(ptr);
+			free(ptr);
 			return (ret);
 		}
 		tmp = tmp->next;
@@ -352,47 +352,16 @@ void	*search_realloc(void *ptr, size_t size)
 	return (NULL);
 }
 
-void	*ft_realloc(void *ptr, size_t size)
+void	*realloc(void *ptr, size_t size)
 {
 	if (size <= 0)
 	{
-		ft_free(ptr);
+		free(ptr);
 		return (NULL);
 	}
 	else if (!ptr)
-		return (ft_malloc(size));
+		return (malloc(size));
 	else
 		return (search_realloc(ptr, size));
 	return (NULL);
-}
-
-int		main()
-{
-	int		i;
-	char	*test;
-	char	*test2;
-
-	i = 0;
-	test = (char *)ft_malloc(5000);
-	test2 = (char *)ft_malloc(5000);
-	while (i < 5000)
-	{
-		test[i] = 'a';
-		test2[i] = 'b';
-		i++;
-	}
-	printf("%s\n", test);
-	printf("%s\n", test2);
-	test = (char *)ft_realloc(test, 6500);
-	test2 = (char *)ft_realloc(test2, 6500);
-	i = 5000;
-	while (i < 6500)
-	{
-		test[i] = '1';
-		test2[i] = '2';
-		i++;
-	}
-	printf("%s\n", test);
-	printf("%s\n", test2);
-	return (0);
 }
