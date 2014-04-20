@@ -6,7 +6,7 @@
 /*   By: mle-roy <mle-roy@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/04/20 15:48:08 by mle-roy           #+#    #+#             */
-/*   Updated: 2014/04/20 19:27:40 by mle-roy          ###   ########.fr       */
+/*   Updated: 2014/04/20 20:30:34 by mle-roy          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,6 +23,7 @@ typedef struct		s_large
 {
 	struct s_large	*next;
 	struct s_large	*prev;
+	size_t			size;
 }					t_large;
 
 typedef struct		s_sm
@@ -126,20 +127,22 @@ void	*large_malloc(size_t size)
 
 	if (!pool.large_m)
 	{
-		pool.large_m = (t_sm *)mmap(0, size + 16, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+		pool.large_m = (t_sm *)mmap(0, size + 24, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		pool.large_m->next = NULL;
 		pool.large_m->prev = NULL;
-		return ((void *)pool.large_m + 16);
+		pool.large_m->size = size;
+		return ((void *)pool.large_m + 24);
 	}
 	else
 	{
 		bws_large = pool.large_m;
 		while (bws_large->next)
 			bws_large = bws_large->next;
-		bws_large->next = (t_sm *)mmap(0, size + 16, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
+		bws_large->next = (t_sm *)mmap(0, size + 24, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 		bws_large->next->next = NULL;
 		bws_large->next->prev = bws_large;
-		return ((void *)bws_large->next + 16);
+		bws_large->next->size = size;
+		return ((void *)bws_large->next + 24);
 	}
 }
 
@@ -163,6 +166,97 @@ void	*ft_malloc(size_t size)
 	else
 		return (large_malloc(size));
 	return (NULL);
+}
+
+int		search_alloc(void *ptr, t_sm *mem, size_t m_range)
+{
+	int		i;
+
+	i = 0;
+	while (i < 100)
+	{
+		if (mem->tab[i] != 0)
+		{
+			if (((void *)mem + ((i + 1) * m_range)) == ptr)
+			{
+				mem->tab[i] = 0;
+				return (1);
+			}
+		}
+		i++;
+	}
+	return (0);
+}
+
+int		is_tiny(void *ptr)
+{
+	t_sm	*bws_tiny;
+
+	bws_tiny = pool.tiny_m;
+	while (bws_tiny)
+	{
+		if (search_alloc(ptr, bws_tiny, TINY_M))
+			return (1);
+		bws_tiny = bws_tiny->next;
+	}
+	return (0);
+}
+
+int		is_small(void *ptr)
+{
+	t_sm	*bws_small;
+
+	bws_small = pool.small_m;
+	while (bws_small)
+	{
+		if (search_alloc(ptr, bws_small, SMALL_M))
+			return (1);
+		bws_small = bws_small->next;
+	}
+	return (0);
+}
+
+void	free_large(t_large *ptr)
+{
+	if (ptr->prev == NULL && ptr->next == NULL)
+		pool.large_m = NULL;
+	else if (ptr->prev == NULL && ptr->next)
+		ptr->next->prev = NULL;
+	else if (ptr->next == NULL && ptr->prev)
+		ptr->prev->next = NULL;
+	else if (ptr->prev && ptr->next)
+	{
+		ptr->prev->next = ptr->next;
+		ptr->next->prev = ptr->prev;
+	}
+	munmap(ptr, ptr->size);
+}
+
+int		is_large(void *ptr)
+{
+	t_large		*bws_large;
+
+	bws_large = pool.large_m;
+	while (bws_large)
+	{
+		if (((void *)bws_large + 24) == ptr)
+		{
+			free_large(bws_large);
+			return (1);
+		}
+	}
+	return (0);
+}
+
+void	ft_free(void *ptr)
+{
+	if (is_tiny(ptr))
+		return ;
+	else if (is_small(ptr))
+		return ;
+	else if (is_large(ptr))
+		return ;
+	return ;
 }
 
 
